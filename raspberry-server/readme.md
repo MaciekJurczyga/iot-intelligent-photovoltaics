@@ -51,7 +51,8 @@ Endpoint Method Description
 - /raspberry/test GET Server test, returns "Hello from Raspberry Pi!"
 - /raspberry/distance GET Distance reading from US-015 sensor in cm
 - /raspberry/bme280 GET Data reading from BME280 for 1 minute (temperature, humidity, pressure)
-- Testing endpoints
+
+## Testing endpoints
 
 Browser: enter in the address bar:
 
