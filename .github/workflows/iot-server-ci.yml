@@ -24,6 +24,10 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
+      - name: Grant execute permission for gradlew
+        working-directory: ./iot-server
+        run: chmod +x ./gradlew
+
       - name: Run tests for iot-server
         working-directory: ./iot-server
         run: ./gradlew test
