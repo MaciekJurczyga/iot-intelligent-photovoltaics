@@ -20,10 +20,11 @@ def bme280_data():
     readings = sensor_service.get_bme280_data()
     return jsonify({"readings": readings})
 
-@app.route(f'{BASE_PATH}/bme280/contionowus', methods=['GET'])
+@app.route(f'{BASE_PATH}/bme280/continuous', methods=['GET'])
 def bme280_continuous():
     readings = sensor_service.get_bme280_continuous()
     return jsonify({"readings": readings})
+
 
 if __name__ == "__main__":
     try:
