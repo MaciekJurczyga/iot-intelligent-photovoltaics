@@ -54,6 +54,24 @@ class SensorService:
             "pressure": data.pressure
         }
 
+    def get_bme280_continuous(self, duration=10, interval=0.5):
+        # Zbieranie danych przez określony czas (domyślnie 10 sekund)
+        readings = []
+        start_time = time.time()
+        end_time = start_time + duration
+        
+        while time.time() < end_time:
+            data = bme280.sample(self.bus, BME280_ADDRESS, self.calibration_params)
+            readings.append({
+                "timestamp": time.time(),
+                "temperature": data.temperature,
+                "humidity": data.humidity,
+                "pressure": data.pressure
+            })
+            time.sleep(interval)
+        
+        return readings
+
     def close(self):
         # Sprzątanie I2C i GPIO
         self.bus.close()
