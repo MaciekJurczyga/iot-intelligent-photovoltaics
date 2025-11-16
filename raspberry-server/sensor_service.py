@@ -59,15 +59,17 @@ class SensorService:
         readings = []
         start_time = time.time()
         end_time = start_time + duration
-
+        id = 0
         while time.time() < end_time:
             data = bme280.sample(self.bus, BME280_ADDRESS, self.calibration_params)
             readings.append({
+                "id": id,
                 "timestamp": time.time(),
                 "temperature": data.temperature,
                 "humidity": data.humidity,
                 "pressure": data.pressure
             })
+            id += 1
             time.sleep(interval)
 
         return readings
