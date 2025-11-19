@@ -19,6 +19,10 @@ public class RaspberryClient {
         this.httpClient = HttpClient.newHttpClient();
     }
 
+    public RaspberryClient(HttpClient client){
+        this.httpClient = client;
+    }
+
     public String test() throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/test"))
