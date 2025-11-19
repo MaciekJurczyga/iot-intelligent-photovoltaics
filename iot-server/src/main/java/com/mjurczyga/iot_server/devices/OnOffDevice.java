@@ -1,4 +1,4 @@
-package com.iot.server.devices;
+package com.mjurczyga.iot_server.devices;
 
 import java.time.Instant;
 
