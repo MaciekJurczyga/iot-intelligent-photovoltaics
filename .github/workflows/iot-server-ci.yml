@@ -30,15 +30,18 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: java
-          source-root: ./iot-server   
+          source-root: ./iot-server
 
-      - name: Autobuild (Java)
+      - name: Build iot-server
         working-directory: ./iot-server
-        uses: github/codeql-action/autobuild@v3
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build -x test
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
-        
+
+
   build-and-test:
     runs-on: ubuntu-latest
     steps:
