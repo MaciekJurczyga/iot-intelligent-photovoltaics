@@ -2,3 +2,4 @@ Flask
 RPi.GPIO
 smbus2
 bme280
+pytest
