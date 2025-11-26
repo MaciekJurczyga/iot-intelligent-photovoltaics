@@ -3,6 +3,9 @@ package com.mjurczyga.iot_server.config;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Configuration for IoT devices in the home
@@ -37,4 +40,30 @@ public class DeviceConfig {
     
     // Minimum surplus required before activating device (buffer)
     private double surplusBuffer = 200.0; // Watts
+
+    private boolean customPriorityEnabled = false;
+    private List<String> customPriorityOrder = new ArrayList<>(Arrays.asList(
+        "EV_CHARGER",
+        "AC_CLIMATE", 
+        "DISHWASHER",
+        "SMART_PLUG"
+    ));
+
+    /**
+     * Get priority index for a device (lower = higher priority)
+     * @param deviceName Device name (e.g., "EV_CHARGER")
+     * @return Priority index (0 = highest priority)
+     */
+    public int getDevicePriority(String deviceName) {
+        int index = customPriorityOrder.indexOf(deviceName);
+        return index >= 0 ? index : 999; // Unknown devices get lowest priority
+    }
+    
+    /**
+     * Check if device should operate in comfort mode (independent of surplus)
+     * Currently only AC_CLIMATE operates in true comfort mode
+     */
+    public boolean isComfortDevice(String deviceName) {
+        return "AC_CLIMATE".equals(deviceName);
+    }
 }
