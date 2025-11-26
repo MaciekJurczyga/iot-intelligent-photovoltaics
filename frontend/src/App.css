@@ -1,0 +1,83 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
+    Arial, sans-serif;
+  background-color: #222222;
+  color: white;
+  -webkit-font-smoothing: antialiased;
+}
+
+.dashboard-overview {
+  display: flex;
+  justify-content: space-evenly;
+  gap: 80px;
+  padding: 40px 0;
+  text-align: center;
+  width: 100%; 
+  margin: 0 auto;
+  min-height: 70vh; 
+  align-items: center;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-width: 250px;
+}
+
+.stat-value-large {
+  font-size: 4.5rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.stat-value-large .unit {
+  font-weight: 400;
+  color: #ffffff;
+}
+
+.stat-label {
+  font-size: 1.5rem; 
+  color: #ffffff;
+  text-shadow: 0 4px 4px rgba(0, 0, 0, 0.8);
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
