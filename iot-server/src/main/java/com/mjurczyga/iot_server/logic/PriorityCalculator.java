@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * Priority-based calculator for IoT device control
- * 
+ *
  * Implements three modes:
  * 1. MAX_USAGE (no one home) - maximize PV usage
  * 2. COMFORT (someone home) - prioritize comfort, use surplus for secondary devices
@@ -26,24 +26,24 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class PriorityCalculator {
-    
+
     private static final Logger log = LoggerFactory.getLogger(PriorityCalculator.class);
-    
+
     private final DeviceConfig config;
-    
+
     /**
      * Main calculation method - determines what actions to take based on current system state
      */
     public DeviceDecision calculatePriorities(SystemState state) {
         DeviceDecision decision = DeviceDecision.create();
-        
+
         // Check if custom priority mode is enabled
         if (config.isCustomPriorityEnabled()) {
             log.info("Mode: CUSTOM (user-defined priorities)");
             decision.mode("CUSTOM");
             return calculateCustomMode(state, decision);
         }
-        
+
         if (state.isAnyoneHome()) {
             log.info("Mode: COMFORT (someone is home)");
             decision.mode("COMFORT");
@@ -54,35 +54,35 @@ public class PriorityCalculator {
             return calculateMaxUsageMode(state, decision);
         }
     }
-    
+
     /**
      * NEW: Custom priority mode - user defines the order
      */
     private DeviceDecision calculateCustomMode(SystemState state, DeviceDecision decision) {
         double surplus = state.getAvailableSurplus();
         decision.availableSurplus(surplus);
-        
+
         log.debug("Available surplus: {}W", surplus);
         log.debug("Custom priority order: {}", config.getCustomPriorityOrder());
-        
+
         // Process devices in custom order
         for (String deviceName : config.getCustomPriorityOrder()) {
             DeviceType deviceType = parseDeviceType(deviceName);
-            
+
             if (deviceType != null) {
                 surplus = handleDeviceByType(deviceType, state, surplus, decision);
             }
         }
-        
+
         decision.explanation(String.format(
-            "Custom priority mode: Order %s. Remaining surplus: %.0fW", 
-            config.getCustomPriorityOrder(),
-            surplus
+                "Custom priority mode: Order %s. Remaining surplus: %.0fW",
+                config.getCustomPriorityOrder(),
+                surplus
         ));
-        
+
         return decision.build();
     }
-    
+
     /**
      * Route to appropriate device handler based on type
      */
@@ -100,7 +100,7 @@ public class PriorityCalculator {
                 return surplus;
         }
     }
-    
+
     /**
      * Parse device type from string
      */
@@ -112,7 +112,7 @@ public class PriorityCalculator {
             return null;
         }
     }
-    
+
     /**
      * Scenario 1: No one home - maximize PV usage
      * Priority order:
@@ -124,30 +124,30 @@ public class PriorityCalculator {
     private DeviceDecision calculateMaxUsageMode(SystemState state, DeviceDecision decision) {
         double surplus = state.getAvailableSurplus();
         decision.availableSurplus(surplus);
-        
+
         log.debug("Available surplus: {}W", surplus);
-        
+
         // Priority 1: EV Charger as dynamic regulator
         surplus = handleEvChargerMaxUsage(state, surplus, decision);
-        
+
         // Priority 2: AC if temperature requires it
         surplus = handleClimateMaxUsage(state, surplus, decision);
-        
+
         // Priority 3: Dishwasher
         surplus = handleDishwasher(state, surplus, decision);
-        
+
         // Priority 4: Smart Plug
         surplus = handleSmartPlug(state, surplus, decision);
-        
+
         decision.explanation(String.format(
-            "Max usage mode: Utilizing %.0fW from PV. Remaining surplus: %.0fW", 
-            state.getCurrentPvProduction(), 
-            surplus
+                "Max usage mode: Utilizing %.0fW from PV. Remaining surplus: %.0fW",
+                state.getCurrentPvProduction(),
+                surplus
         ));
-        
+
         return decision.build();
     }
-    
+
     /**
      * Scenario 2: Someone home - prioritize comfort
      * Priority order:
@@ -159,32 +159,29 @@ public class PriorityCalculator {
     private DeviceDecision calculateComfortMode(SystemState state, DeviceDecision decision) {
         double surplus = state.getAvailableSurplus();
         decision.availableSurplus(surplus);
-        
+
         log.debug("Available surplus: {}W", surplus);
-        
+
         // Priority 1: AC for comfort (independent of surplus)
-        handleClimateComfort(state, decision);
-        
-        // Recalculate surplus after AC decision
-        surplus = state.getAvailableSurplus();
-        
+        surplus = handleClimateComfort(state, surplus, decision);
+
         // Priority 2: EV Charger with remaining surplus
         surplus = handleEvChargerComfort(state, surplus, decision);
-        
+
         // Priority 3: Dishwasher
         surplus = handleDishwasher(state, surplus, decision);
-        
+
         // Priority 4: Smart Plug
         surplus = handleSmartPlug(state, surplus, decision);
-        
+
         decision.explanation(String.format(
-            "Comfort mode: Priority on comfort. Available surplus: %.0fW", 
-            surplus
+                "Comfort mode: Priority on comfort. Available surplus: %.0fW",
+                surplus
         ));
-        
+
         return decision.build();
     }
-    
+
     /**
      * Handle EV charger in max usage mode - charge with any available surplus
      */
@@ -192,148 +189,158 @@ public class PriorityCalculator {
         if (!state.isEvConnected()) {
             if (state.getEvChargingPower() > 0) {
                 decision.addAction(DeviceAction.builder()
-                    .device(DeviceType.EV_CHARGER)
-                    .action(ActionType.TURN_OFF)
-                    .reason("EV not connected")
-                    .build());
+                        .device(DeviceType.EV_CHARGER)
+                        .action(ActionType.TURN_OFF)
+                        .reason("EV not connected")
+                        .build());
             }
             return surplus;
         }
-        
+
         if (state.getEvChargePercentage() >= 95.0) {
             if (state.getEvChargingPower() > 0) {
                 decision.addAction(DeviceAction.builder()
-                    .device(DeviceType.EV_CHARGER)
-                    .action(ActionType.TURN_OFF)
-                    .reason("EV fully charged (95%+)")
-                    .build());
+                        .device(DeviceType.EV_CHARGER)
+                        .action(ActionType.TURN_OFF)
+                        .reason("EV fully charged (95%+)")
+                        .build());
             }
             return surplus;
         }
-        
+
         // Calculate optimal charging power
         double targetPower = calculateEvChargingPower(surplus, state);
-        
+
         if (targetPower >= config.getEvMinPower()) {
             decision.addAction(DeviceAction.builder()
-                .device(DeviceType.EV_CHARGER)
-                .action(ActionType.SET_POWER)
-                .targetPower(targetPower)
-                .reason(String.format("Charging with %.0fW (%.0f%% charged)", targetPower, state.getEvChargePercentage()))
-                .build());
+                    .device(DeviceType.EV_CHARGER)
+                    .action(ActionType.SET_POWER)
+                    .targetPower(targetPower)
+                    .reason(String.format("Charging with %.0fW (%.0f%% charged)", targetPower, state.getEvChargePercentage()))
+                    .build());
             return surplus - targetPower;
         } else if (state.getEvChargingPower() > 0) {
             decision.addAction(DeviceAction.builder()
-                .device(DeviceType.EV_CHARGER)
-                .action(ActionType.TURN_OFF)
-                .reason("Insufficient surplus for minimum charging power")
-                .build());
+                    .device(DeviceType.EV_CHARGER)
+                    .action(ActionType.TURN_OFF)
+                    .reason("Insufficient surplus for minimum charging power")
+                    .build());
         }
-        
+
         return surplus;
     }
-    
+
     /**
      * Handle EV charger in comfort mode - use surplus after AC
      */
     private double handleEvChargerComfort(SystemState state, double surplus, DeviceDecision decision) {
         return handleEvChargerMaxUsage(state, surplus, decision); // Same logic but different context
     }
-    
+
     /**
      * Calculate optimal EV charging power based on available surplus
      */
     private double calculateEvChargingPower(double surplus, SystemState state) {
         // Add current EV consumption back to surplus to get total available
         double totalAvailable = surplus + state.getEvChargingPower();
-        
+
         // Apply buffer
         totalAvailable -= config.getSurplusBuffer();
-        
+
         // Clamp to EV charger limits
         if (totalAvailable < config.getEvMinPower()) {
             return 0.0;
         }
-        
+
         return Math.min(totalAvailable, config.getEvMaxPower());
     }
-    
+
     /**
      * Handle climate control in max usage mode - only if temperature requires
      */
     private double handleClimateMaxUsage(SystemState state, double surplus, DeviceDecision decision) {
         boolean needsCooling = state.getIndoorTemperature() > config.getTargetTemperature() + config.getTemperatureHysteresis();
         boolean needsHeating = state.getIndoorTemperature() < config.getTargetTemperature() - config.getTemperatureHysteresis();
-        
+
         if (!needsCooling && !needsHeating) {
             if (state.isAcOn()) {
                 decision.addAction(DeviceAction.builder()
-                    .device(DeviceType.AC_CLIMATE)
-                    .action(ActionType.TURN_OFF)
-                    .reason("Temperature in acceptable range")
-                    .build());
+                        .device(DeviceType.AC_CLIMATE)
+                        .action(ActionType.TURN_OFF)
+                        .reason("Temperature in acceptable range")
+                        .build());
                 return surplus + state.getAcPowerUsage();
             }
             return surplus;
         }
-        
+
         double requiredPower = needsCooling ? config.getAcCoolingPower() : config.getAcHeatingPower();
-        
+
         // In max usage mode, only turn on if we have surplus
         if (surplus + state.getAcPowerUsage() >= requiredPower + config.getSurplusBuffer()) {
             if (!state.isAcOn()) {
                 decision.addAction(DeviceAction.builder()
-                    .device(DeviceType.AC_CLIMATE)
-                    .action(ActionType.TURN_ON)
-                    .reason(String.format("Temperature %.1f°C, target %.1f°C (%s)", 
-                        state.getIndoorTemperature(), 
-                        config.getTargetTemperature(),
-                        needsCooling ? "cooling" : "heating"))
-                    .build());
+                        .device(DeviceType.AC_CLIMATE)
+                        .action(ActionType.TURN_ON)
+                        .reason(String.format("Temperature %.1f°C, target %.1f°C (%s)",
+                                state.getIndoorTemperature(),
+                                config.getTargetTemperature(),
+                                needsCooling ? "cooling" : "heating"))
+                        .build());
                 return surplus - requiredPower;
             }
             return surplus;
         } else if (state.isAcOn()) {
             decision.addAction(DeviceAction.builder()
-                .device(DeviceType.AC_CLIMATE)
-                .action(ActionType.TURN_OFF)
-                .reason("Insufficient surplus for climate control")
-                .build());
+                    .device(DeviceType.AC_CLIMATE)
+                    .action(ActionType.TURN_OFF)
+                    .reason("Insufficient surplus for climate control")
+                    .build());
             return surplus + state.getAcPowerUsage();
         }
-        
+
         return surplus;
     }
-    
+
     /**
      * Handle climate control in comfort mode - always operate based on temperature needs
+     * FIXED: Now returns updated surplus after AC decision
      */
-    private void handleClimateComfort(SystemState state, DeviceDecision decision) {
+    private double handleClimateComfort(SystemState state, double surplus, DeviceDecision decision) {
         boolean needsCooling = state.getIndoorTemperature() > config.getTargetTemperature() + config.getTemperatureHysteresis();
         boolean needsHeating = state.getIndoorTemperature() < config.getTargetTemperature() - config.getTemperatureHysteresis();
-        
+
         if (needsCooling || needsHeating) {
             if (!state.isAcOn()) {
+                double requiredPower = needsCooling ? config.getAcCoolingPower() : config.getAcHeatingPower();
                 decision.addAction(DeviceAction.builder()
-                    .device(DeviceType.AC_CLIMATE)
-                    .action(ActionType.TURN_ON)
-                    .reason(String.format("Comfort priority: Temperature %.1f°C, target %.1f°C (%s)", 
-                        state.getIndoorTemperature(), 
-                        config.getTargetTemperature(),
-                        needsCooling ? "cooling" : "heating"))
-                    .build());
+                        .device(DeviceType.AC_CLIMATE)
+                        .action(ActionType.TURN_ON)
+                        .reason(String.format("Comfort priority: Temperature %.1f°C, target %.1f°C (%s)",
+                                state.getIndoorTemperature(),
+                                config.getTargetTemperature(),
+                                needsCooling ? "cooling" : "heating"))
+                        .build());
+                // Subtract AC power from surplus
+                return surplus - requiredPower;
             }
+            // AC already on, no change to surplus
+            return surplus;
         } else {
             if (state.isAcOn()) {
                 decision.addAction(DeviceAction.builder()
-                    .device(DeviceType.AC_CLIMATE)
-                    .action(ActionType.TURN_OFF)
-                    .reason("Temperature in acceptable range")
-                    .build());
+                        .device(DeviceType.AC_CLIMATE)
+                        .action(ActionType.TURN_OFF)
+                        .reason("Temperature in acceptable range")
+                        .build());
+                // Add back AC power to surplus
+                return surplus + state.getAcPowerUsage();
             }
         }
+
+        return surplus;
     }
-    
+
     /**
      * Handle dishwasher - only turn on with stable surplus
      */
@@ -341,25 +348,25 @@ public class PriorityCalculator {
         if (!state.isDishwasherReady()) {
             return surplus;
         }
-        
+
         if (state.isDishwasherOn()) {
             // Already running
             return surplus;
         }
-        
+
         // Turn on only if we have enough surplus
         if (surplus >= config.getDishwasherPower() + config.getSurplusBuffer()) {
             decision.addAction(DeviceAction.builder()
-                .device(DeviceType.DISHWASHER)
-                .action(ActionType.TURN_ON)
-                .reason(String.format("Sufficient surplus (%.0fW) for dishwasher", surplus))
-                .build());
+                    .device(DeviceType.DISHWASHER)
+                    .action(ActionType.TURN_ON)
+                    .reason(String.format("Sufficient surplus (%.0fW) for dishwasher", surplus))
+                    .build());
             return surplus - config.getDishwasherPower();
         }
-        
+
         return surplus;
     }
-    
+
     /**
      * Handle smart plug devices - turn on with stable surplus
      */
@@ -368,10 +375,10 @@ public class PriorityCalculator {
             // Check if we should turn it off
             if (surplus + state.getSmartPlugPower() < config.getSurplusBuffer()) {
                 decision.addAction(DeviceAction.builder()
-                    .device(DeviceType.SMART_PLUG)
-                    .action(ActionType.TURN_OFF)
-                    .reason("Insufficient surplus to maintain smart plug")
-                    .build());
+                        .device(DeviceType.SMART_PLUG)
+                        .action(ActionType.TURN_OFF)
+                        .reason("Insufficient surplus to maintain smart plug")
+                        .build());
                 return surplus + state.getSmartPlugPower();
             }
             return surplus;
@@ -379,14 +386,14 @@ public class PriorityCalculator {
             // Turn on if we have enough surplus
             if (surplus >= config.getSmartPlugPower() + config.getSurplusBuffer()) {
                 decision.addAction(DeviceAction.builder()
-                    .device(DeviceType.SMART_PLUG)
-                    .action(ActionType.TURN_ON)
-                    .reason(String.format("Sufficient surplus (%.0fW) for smart plug", surplus))
-                    .build());
+                        .device(DeviceType.SMART_PLUG)
+                        .action(ActionType.TURN_ON)
+                        .reason(String.format("Sufficient surplus (%.0fW) for smart plug", surplus))
+                        .build());
                 return surplus - config.getSmartPlugPower();
             }
         }
-        
+
         return surplus;
     }
 }
