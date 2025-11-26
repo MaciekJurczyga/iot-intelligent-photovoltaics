@@ -7,23 +7,28 @@ import com.mjurczyga.iot_server.model.DeviceDecision.DeviceAction;
 import com.mjurczyga.iot_server.model.DeviceDecision.DeviceType;
 import com.mjurczyga.iot_server.model.SystemState;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+
 /**
  * Priority-based calculator for IoT device control
  * 
- * Implements two modes:
+ * Implements three modes:
  * 1. MAX_USAGE (no one home) - maximize PV usage
  * 2. COMFORT (someone home) - prioritize comfort, use surplus for secondary devices
+ * 3. CUSTOM - user-defined priority order
  */
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class PriorityCalculator {
-
+    
+    private static final Logger log = LoggerFactory.getLogger(PriorityCalculator.class);
+    
     private final DeviceConfig config;
     
     /**
@@ -31,6 +36,13 @@ public class PriorityCalculator {
      */
     public DeviceDecision calculatePriorities(SystemState state) {
         DeviceDecision decision = DeviceDecision.create();
+        
+        // Check if custom priority mode is enabled
+        if (config.isCustomPriorityEnabled()) {
+            log.info("Mode: CUSTOM (user-defined priorities)");
+            decision.mode("CUSTOM");
+            return calculateCustomMode(state, decision);
+        }
         
         if (state.isAnyoneHome()) {
             log.info("Mode: COMFORT (someone is home)");
@@ -40,6 +52,64 @@ public class PriorityCalculator {
             log.info("Mode: MAX_USAGE (no one home)");
             decision.mode("MAX_USAGE");
             return calculateMaxUsageMode(state, decision);
+        }
+    }
+    
+    /**
+     * NEW: Custom priority mode - user defines the order
+     */
+    private DeviceDecision calculateCustomMode(SystemState state, DeviceDecision decision) {
+        double surplus = state.getAvailableSurplus();
+        decision.availableSurplus(surplus);
+        
+        log.debug("Available surplus: {}W", surplus);
+        log.debug("Custom priority order: {}", config.getCustomPriorityOrder());
+        
+        // Process devices in custom order
+        for (String deviceName : config.getCustomPriorityOrder()) {
+            DeviceType deviceType = parseDeviceType(deviceName);
+            
+            if (deviceType != null) {
+                surplus = handleDeviceByType(deviceType, state, surplus, decision);
+            }
+        }
+        
+        decision.explanation(String.format(
+            "Custom priority mode: Order %s. Remaining surplus: %.0fW", 
+            config.getCustomPriorityOrder(),
+            surplus
+        ));
+        
+        return decision.build();
+    }
+    
+    /**
+     * Route to appropriate device handler based on type
+     */
+    private double handleDeviceByType(DeviceType type, SystemState state, double surplus, DeviceDecision decision) {
+        switch (type) {
+            case EV_CHARGER:
+                return handleEvChargerMaxUsage(state, surplus, decision);
+            case AC_CLIMATE:
+                return handleClimateMaxUsage(state, surplus, decision);
+            case DISHWASHER:
+                return handleDishwasher(state, surplus, decision);
+            case SMART_PLUG:
+                return handleSmartPlug(state, surplus, decision);
+            default:
+                return surplus;
+        }
+    }
+    
+    /**
+     * Parse device type from string
+     */
+    private DeviceType parseDeviceType(String deviceName) {
+        try {
+            return DeviceType.valueOf(deviceName);
+        } catch (IllegalArgumentException e) {
+            log.warn("Unknown device type in custom priority: {}", deviceName);
+            return null;
         }
     }
     
