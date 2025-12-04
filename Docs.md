@@ -217,9 +217,9 @@ Konfiguracja środowiska serwerowego, integracja urządzeń IoT oraz setup sieci
 3. Instalacja i konfiguracja Home Assistant
 4. Integracja urządzeń IoT (Falownik, Klimatyzator, Smart Plug, Licznik)
 5. Konfiguracja sieci lokalnej i VPN
-6. Przygotowanie skryptów i automatyzacji
+6. Przygotowanie skryptów i automatyzacji w HA
 7. Testy systemu
-8. Konfiguracja i testy Raspberry Pi
+8. Podłączenie i testy Raspberry Pi onsite
 
 #### Hardware
 
@@ -228,18 +228,17 @@ Konfiguracja środowiska serwerowego, integracja urządzeń IoT oraz setup sieci
 - Główny serwer z Home Assistant, Backend i Frontend
 - System: Ubuntu Server
 - Zdalny dostęp: SSH
-- Środowisko: Docker
+- Kontenery dla poszczególnych elementów systemu
 
 **Falownik Deye**
 
-- Konfiguracja paneli fotowoltaicznych w sieci lokalnej
-- Ustawienie stałego adresu IP
+- Konfiguracja panelu dostępowego falownika w sieci lokalnej
+- Ustawienie stałego adresu IP 
 
 **Klimatyzator MDV**
 
 - Konfiguracja trybów pracy
 - Podłączenie do Wi-Fi
-- Integracja z backendem
 
 **Smart Gniazdko Smart Plug +**
 
@@ -254,7 +253,7 @@ Konfiguracja środowiska serwerowego, integracja urządzeń IoT oraz setup sieci
 
 **HACS (Home Assistant Community Store)**
 
-- Rozszerzenie dostępnych integracji z urządzeniami IoT
+- Rozszerzenie dostępnych integracji z urządzeniami IoT poprzez instalację HACS
 
 **Integracje Urządzeń**
 
@@ -271,17 +270,20 @@ Konfiguracja środowiska serwerowego, integracja urządzeń IoT oraz setup sieci
 
 **Skrypty i Automatyzacje**
 
-- Przygotowanie skryptów wywoływanych przez Backend
-- Konfiguracja automatyzacji
+- Przygotowanie skryptów wywoływanych przez Backend, np:
+  - uruchamianie trybu klimatyzacji
+  - pobieranie danych z API Tauron
+  - wysyłanie powiadomień na urządzenie mobilne
 
 **Dashboardy**
 
 - Dashboard wyświetlający dane z urządzeń IoT
 - Panel energii z danymi z falownika i licznika Tauron
+- Pusty panel webpage (do embeddowania naszego frontendu)
 
 **Selekcja Encji**
 
-- Wybór encji do komunikacji z backendem
+- Wybór encji wystawianych przez urządzenia w HA potrzebnych do obsługi logiki przez backend
 - Dane o energii i stanach urządzeń
 - Przełączniki on/off
 
@@ -294,7 +296,7 @@ Konfiguracja środowiska serwerowego, integracja urządzeń IoT oraz setup sieci
 **Serwer DHCP**
 
 - Konfiguracja dla urządzeń bez możliwości statycznego IP
-- Wymiana urządzeń sieciowych
+- Wymiana urządzeń sieciowych - router ISP nie miał możliwości ręcznych ustawień DHCP
 
 **VPN (Tailscale)**
 
@@ -310,10 +312,10 @@ Konfiguracja środowiska serwerowego, integracja urządzeń IoT oraz setup sieci
 
 #### Testy Systemu
 
-- Weryfikacja włączania/wyłączania urządzeń
-- Testy ustawiania trybów
-- Sprawdzenie systemu powiadomień
-- Testy działania czujników Raspberry Pi
+- Weryfikacja włączania/wyłączania urządzeń przez logikę backendu
+- Sprawdzenie systemu powiadomień, czy działa w sieci lokalnej oraz przez VPN
+- Testy działania czujników Raspberry Pi - weryfikacja, czy pomiary sa zgodne ze stanem faktycznym
+- Test utraty zasilania w domu - sprawdzenie, czy system uruchamia się bez problemów po stracie napięcia. 
 
 ---
 
