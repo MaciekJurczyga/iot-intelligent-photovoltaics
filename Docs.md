@@ -514,14 +514,14 @@ Moduł odpowiedzialny za inteligentne zarządzanie urządzeniami w celu maksymal
 2. Przygotowanie środowiska Spring Boot
 3. Konfiguracja VPN do zdalnego dostępu HA
 4. Implementacja HomeAssistantClient
-5. Konfiguracja serwera (application.yml)
+5. Konfiguracja poboru urządzeń
 6. Kontroler smart plug
 7. Implementacja logiki priorytetów (MAX_USAGE/COMFORT)
-8. Wdrożenie systemu na serwer
+8. Wdrożenie skryptu na serwer
 9. Dostosowanie do różnych mocy urządzeń
-10. Testy jednostkowe (58 testów bazowych)
+10. Testy jednostkowe 
 11. Tryb CUSTOM z API do zarządzania priorytetami
-12. Testy dla custom mode (29 dodatkowych testów)
+12. Testy dla custom mode 
 13. Dokumentacja API
 
 #### Architektura Systemu
