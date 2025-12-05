@@ -39,6 +39,7 @@ Część odpowiedzialna za obsługę czujników podłączonych do Raspberry Pi 3
 - **Rezystory**: 300Ω oraz 470Ω (dzielnik napięcia)
 
 #### Schematy Połączeń
+**Autor:** Szymon Burliga
 
 **A. BME280 (I2C)**  
 Zasilanie 3.3V. Podłączenie bezpośrednie.
@@ -46,9 +47,11 @@ Zasilanie 3.3V. Podłączenie bezpośrednie.
 | Pin RPi 3B+ | Funkcja      | Pin BME280 |
 | ----------- | ------------ | ---------- |
 | Pin 1       | 3.3V Power   | VIN / VCC  |
-| Pin 9       | GND          | GND        |
-| Pin 3       | GPIO 2 (SDA) | SDA        |
-| Pin 5       | GPIO 3 (SCL) | SCL        |
+| Pin 6       | GND          | GND        |
+| Pin 5       | GPIO 3       | SCK        |
+| Pin 9       | GND          | SDO        |
+| Pin 3       | GPIO 2       | SDI        |
+| Pin 17      | 3.3V Power   | CS         |
 
 **B. US-015 (GPIO + Dzielnik Napięcia)**  
 Sensor zasilany 5V. Pin Echo wymaga obniżenia napięcia do 3.3V.
@@ -63,7 +66,7 @@ Konfiguracja dzielnika:
 | ----------- | ------------- | --------------------- |
 | Pin 2       | 5V Power      | VCC                   |
 | Pin 6       | GND           | GND                   |
-| Pin 16      | GPIO 23 (Out) | Trig                  |
+| Pin 16      | GPIO 23       | Trig                  |
 | Pin 18      | GPIO 24 (In)  | Echo (przez dzielnik) |
 
 #### REST API
